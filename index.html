@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>文件服务器</title>
+
+    <!-- 引入样式 -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"
+    />
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <el-button @click="getDirData('.vscode')">请求</el-button>
+
+      <el-table :data="tableData" style="width: 100%">
+        <el-table-column prop="fileName" label="名称" width="180">
+          <template slot-scope="scope">
+                <a href="javascript:void(0);" @click="getData(scope.row)">{{ scope.row.fileName }}</a>
+          </template>
+        </el-table-column>
+        <el-table-column prop="updateTime" label="修改时间" width="180">
+        </el-table-column>
+        <el-table-column prop="size" label="大小"> </el-table-column>
+      </el-table>
+    </div>
+  </body>
+</html>
+
+<script>
+  //发送get请求
+  function ajaxGetUtil(url, handleFunction) {
+    var httpRequest = new XMLHttpRequest(); //第一步：建立所需的对象
+    httpRequest.open("GET", url, true); //第二步：打开连接  将请求参数写在url中  ps:"./Ptest.php?name=test&nameone=testone"
+    httpRequest.send(); //第三步：发送请求  将请求参数写在URL中
+
+    httpRequest.onreadystatechange = function() {
+      if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+        var data = JSON.parse(httpRequest.responseText);
+        if (data.code == 0) {
+          alert(data.data);
+          //自动刷新页面
+          location.reload();
+          return;
+        }
+        handleFunction(data); //获取到json字符串，还需解析
+      }
+    };
+  }
+
+  //发送get请求
+  function ajaxPostUtil(url, dataObj, handleFunction) {
+    var httpRequest = new XMLHttpRequest(); //第一步：创建需要的对象
+    httpRequest.open("post", url); //第二步：打开连接/***发送json格式文件必须设置请求头 ；如下 - */
+    httpRequest.setRequestHeader("Content-type", "application/json"); //设置请求头 注：post方式必须设置请求头（在建立连接后设置请求头）var obj = { name: 'zhansgan', age: 18 };
+    httpRequest.send(JSON.stringify(dataObj)); //发送请求 将json写入send中
+
+    httpRequest.onreadystatechange = function() {
+      //请求后的回调接口，可将请求成功后要执行的程序写在其中
+      if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+        //验证请求是否发送成功
+        var data = JSON.parse(httpRequest.responseText);
+        if (data.code == 0) {
+          alert(data.data);
+          //自动刷新页面
+          location.reload();
+          return;
+        }
+        handleFunction(data); //获取到json字符串，还需解析
+      }
+    };
+  }
+
+  new Vue({
+    el: "#app",
+    data: function() {
+      return {
+        tableData: []
+      };
+    },
+    created() {
+      this.getDirData();
+    },
+    methods: {
+      //获取目录数据
+      getDirData(dirName) {
+        //如果不传目录名默认是家目录
+        if (dirName == undefined) {
+          dirName = "homeDir";
+        }
+        var _this = this;
+        ajaxGetUtil("/getDirData?dirName=" + dirName, function(response) {
+            var buff=[];
+            //将文件夹和文件排序
+            response.dirData.map(item=>{
+                if(item.isDir){
+                    buff.push(item);
+                }
+            });
+            response.dirData.map(item=>{
+                if(!item.isDir){
+                    buff.push(item);
+                }
+            });
+
+            _this.tableData = buff;
+        });
+      },
+      getData(row){
+          //获取文件夹
+          if(row.isDir){
+              this.getDirData(row.fileName);
+          }else{//获取文件
+              //请求文件
+            //   ajaxGetUtil("/getFile?fileName="+row.fileName,function(){
+            //       console.log(1111)
+            //   })
+            location.href = "/getFile?fileName="+row.fileName
+
+          }
+      }
+    }
+  });
+</script>
