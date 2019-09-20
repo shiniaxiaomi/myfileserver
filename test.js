@@ -1,44 +1,77 @@
-const fs = require("fs");
-const path = require("path");
+// const fs = require("fs");
+// const path = require("path");
+// const moment = require("moment");
 
-var root={
-    isDir:true,
-    children:[],
-    relativePath:"/",
-    size:0
-};
+// var root = {
+//   children: []
+// };
 
-var obj={size:0}
-var buff={size:0}
-function computeDirSize(obj,dirPath){
-    var stat=fs.statSync(dirPath);
-    if(!stat.isDirectory()){
-        obj.children.push({
-            isDir:false,
-            children:undefined,
-            size:stat.size,
-            relativePath:dirPath
-        });
-        // buff.size+=stat.size;
-        return stat.size;
-    }
-    var files=fs.readdirSync(dirPath);
-    var buffSize=0;
-    files.forEach(item=>{
-        var childrenObj={
-            isDir:true,
-            children:[],
-            size:0,
-            relativePath:path.join(obj.relativePath,item)
-        }
-        obj.children.push(childrenObj)
-        var buff2=computeDirSize(childrenObj,path.join(dirPath,item))
-        childrenObj.size=buff2;
-        buffSize+=buff2;
-    })
-    obj.size=buffSize;
-    return buffSize;
-}
+// var obj = { size: 0 };
+// var buff = { size: 0 };
 
-computeDirSize(root,"F:\\code\\myfileserver\\upload");
-console.log(root)
+// //计算文件夹或文件的大小
+// //obj是path对应的文件,name是obj的文件名
+// function computeDirSize(obj, basePath, relativePath, name) {
+//   var stat = fs.statSync(path.join(basePath, relativePath));
+//   //是文件
+//   if (!stat.isDirectory()) {
+//     obj.children.push({
+//       name: name,
+//       updateTime: moment(stat.mtime).format("YYYY-MM-DD HH:mm:ss"), //格式化时间
+//       isDir: false,
+//       children: undefined,
+//       size: stat.size,
+//       absolutePath: path.join(basePath, relativePath),
+//       relativePath: relativePath
+//     });
+//     return stat.size;
+//   }
+
+//   //是文件夹
+//   var dirItem = {
+//     name: name,
+//     updateTime: moment(stat.mtime).format("YYYY-MM-DD HH:mm:ss"), //格式化时间
+//     isDir: true,
+//     children: [],
+//     size: undefined,
+//     absolutePath: path.join(basePath, relativePath),
+//     relativePath: relativePath
+//   };
+//   obj.children.push(dirItem);
+//   var files = fs.readdirSync(dirItem.absolutePath);
+//   var buff = 0;
+//   files.forEach(item => {
+//     buff += computeDirSize(
+//       dirItem,
+//       basePath,
+//       path.join(relativePath, item),
+//       item
+//     );
+//   });
+//   dirItem.size = buff;
+//   return buff;
+// }
+
+// computeDirSize(root, "D:\\code\\myfileserver\\upload", "/", "upload");
+// // console.log(root);
+
+// root = root.children[0];
+// var files = getDirDataByUrl(root, "/");
+// console.log(files);
+
+// function getDirDataByUrl(root, relativePath) {
+//   if (root.relativePath == relativePath) {
+//     if (root.children == undefined) {
+//       return [root];
+//     } else {
+//       return root.children;
+//     }
+//   }
+//   //如果是文件,则直接返回[]
+//   if (root.children == undefined) {
+//     return [];
+//   }
+//   root.children.forEach(item => {
+//     return getDirDataByUrl(item, relativePath);
+//   });
+// }

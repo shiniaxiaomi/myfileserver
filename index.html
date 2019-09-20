@@ -67,10 +67,10 @@
       </el-upload>
 
       <el-table :data="tableData" style="width: 100%">
-        <el-table-column prop="fileName" label="名称" width="180">
+        <el-table-column prop="name" label="名称" width="180">
           <template slot-scope="scope">
             <a href="javascript:void(0);" @click="getData(scope.row)">{{
-              scope.row.fileName
+              scope.row.name
             }}</a>
           </template>
         </el-table-column>
@@ -185,8 +185,14 @@
       },
       // 返回上一级目录
       backDirHandle() {
-        this.getDirData(this.backDir);
-        this.currentDir = this.backDir;
+        var arr = this.currentDir.split("\\");
+        var path = "";
+        for (var i = 0; i < arr.length - 1; i++) {
+          if (arr[i] == "") continue;
+          path += "\\" + arr[i];
+        }
+        this.getDirData(path == "" ? "/" : path);
+        this.currentDir = path;
       },
       //编辑文件
       handleEdit(index, row) {
@@ -195,38 +201,44 @@
       //删除文件
       handleDelete(index, row) {
         var _this = this;
-        ajaxGetUtil("deleteFile?filePath="+this.currentDir+row.fileName,function(response){
-          if (response.code == 1) {
+        ajaxGetUtil(
+          "deleteFile?filePath=" + this.currentDir + "/" + row.name,
+          function(response) {
+            if (response.code == 1) {
               _this.$message("文件删除成功");
               _this.refreshDirData();
-            }else{
+            } else {
               _this.$message("文件删除失败");
             }
-        })
+          }
+        );
       },
       //创建文件夹
       mkDir() {
         var _this = this;
         var dirName = prompt("请输入文件夹名称", "");
-        if (dirName != null) {
-          ajaxGetUtil("/mkdir?dirName=" + this.currentDir + dirName, function(
-            response
-          ) {
-            if (response.code == 1) {
-              _this.$message("文件全部上传成功");
-              _this.refreshDirData();
-            }else{
-              _this.$message("文件上传失败");
+        if (dirName != null && dirName != undefined && dirName != "") {
+          ajaxGetUtil(
+            "/mkdir?dirName=" + this.currentDir + "/" + dirName,
+            function(response) {
+              if (response.code == 1) {
+                _this.$message("文件夹创建成功");
+                _this.refreshDirData();
+              } else {
+                _this.$message("文件夹创建失败");
+              }
             }
-          });
+          );
         }
       },
       //获取目录数据
       getDirData(dirName) {
         //如果不传目录名默认是家目录
-        if (dirName == undefined || dirName == "/") {
+        if (dirName == undefined || dirName == "" || dirName == "/") {
           dirName = "/";
         }
+        this.currentDir = dirName; //保存当前目录地址
+
         var _this = this;
         ajaxGetUtil("/getDirData?dirName=" + dirName, function(response) {
           var buff = [];
@@ -248,9 +260,8 @@
       getData(row) {
         //获取文件夹
         if (row.isDir) {
-          this.backDir = this.currentDir; //保存上一级目录
-          this.currentDir = this.currentDir + row.fileName + "/";
-          this.getDirData(this.currentDir);
+          this.backDir = row.currentDir; //保存现在目录为返回目录
+          this.getDirData(row.relativePath);
         } else {
           //获取文件(方法待改进)
           location.href = "/getFile?fileName=" + row.fileName;
