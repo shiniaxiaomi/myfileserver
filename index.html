@@ -17,17 +17,79 @@
   </head>
   <body>
     <div id="app">
-      <el-button @click="getDirData('.vscode')">请求</el-button>
+      <el-upload
+        class="upload-demo"
+        drag
+        ref="upload"
+        multiple
+        action="/upload"
+        :data="fileExtraData"
+        :auto-upload="false"
+        :limit="100"
+        :before-upload="beforeAvatarUpload"
+        :on-success="uploadSuccess"
+      >
+        <i class="el-icon-upload"></i>
+        <div class="el-upload__text">将文件拖到此处 或 点击上传</div>
+        <div class="el-upload__tip" slot="tip">
+          最多一次性上传100个文件,文件大小不能超过10G
+        </div>
+        <div class="el-upload__tip" slot="tip">
+          <el-button
+            style="margin-left: 10px;"
+            size="small"
+            type="success"
+            @click="submitUpload"
+            >上传到服务器</el-button
+          >
+          <el-button
+            style="margin-left: 10px;"
+            size="small"
+            type="success"
+            @click="clearFiles"
+            >清空文件列表</el-button
+          >
+          <el-button
+            style="margin-left: 10px;"
+            size="small"
+            type="success"
+            @click="mkDir"
+            >创建文件夹</el-button
+          >
+          <el-button
+            style="margin-left: 10px;"
+            size="small"
+            type="success"
+            @click="backDirHandle"
+            >返回上一级</el-button
+          >
+        </div>
+      </el-upload>
 
       <el-table :data="tableData" style="width: 100%">
         <el-table-column prop="fileName" label="名称" width="180">
           <template slot-scope="scope">
-                <a href="javascript:void(0);" @click="getData(scope.row)">{{ scope.row.fileName }}</a>
+            <a href="javascript:void(0);" @click="getData(scope.row)">{{
+              scope.row.fileName
+            }}</a>
           </template>
         </el-table-column>
         <el-table-column prop="updateTime" label="修改时间" width="180">
         </el-table-column>
         <el-table-column prop="size" label="大小"> </el-table-column>
+        <el-table-column label="操作">
+          <template slot-scope="scope">
+            <el-button size="mini" @click="handleEdit(scope.$index, scope.row)"
+              >编辑</el-button
+            >
+            <el-button
+              size="mini"
+              type="danger"
+              @click="handleDelete(scope.$index, scope.row)"
+              >删除</el-button
+            >
+          </template>
+        </el-table-column>
       </el-table>
     </div>
   </body>
@@ -81,49 +143,121 @@
     el: "#app",
     data: function() {
       return {
-        tableData: []
+        tableData: [],
+        fileList: [],
+        fileExtraData: {}, //文件上传额外的数据
+        uploadTimes: 0, //记录上传成功的个数
+        currentDir: "/", //记录当前访问的目录
+        backDir: "/" //记录上一级目录
       };
     },
     created() {
       this.getDirData();
     },
     methods: {
+      //上传成功后提示信息,并清空文件列表
+      uploadSuccess(response, file, fileList) {
+        this.uploadTimes++;
+        if (fileList.length == this.uploadTimes) {
+          this.$message("文件全部上传成功");
+          this.$refs.upload.clearFiles();
+          this.refreshDirData();
+        }
+      },
+      //上传之前限制文件大小
+      beforeAvatarUpload(file) {
+        const isLt10GB = file.size / 1024 / 1024 / 1024 < 10;
+
+        if (!isLt10GB) {
+          this.$message.error("上传头像图片大小不能超过 10GB!");
+        }
+        this.uploadTimes = 0; //清空上传成功的统计个数
+        return isLt10GB;
+      },
+      //点击上传文件
+      submitUpload() {
+        this.fileExtraData.dirName = this.currentDir;
+        this.$refs.upload.submit();
+      },
+      //清除文件列表
+      clearFiles() {
+        this.$refs.upload.clearFiles();
+      },
+      // 返回上一级目录
+      backDirHandle() {
+        this.getDirData(this.backDir);
+        this.currentDir = this.backDir;
+      },
+      //编辑文件
+      handleEdit(index, row) {
+        console.log(index, row);
+      },
+      //删除文件
+      handleDelete(index, row) {
+        var _this = this;
+        ajaxGetUtil("deleteFile?filePath="+this.currentDir+row.fileName,function(response){
+          if (response.code == 1) {
+              _this.$message("文件删除成功");
+              _this.refreshDirData();
+            }else{
+              _this.$message("文件删除失败");
+            }
+        })
+      },
+      //创建文件夹
+      mkDir() {
+        var _this = this;
+        var dirName = prompt("请输入文件夹名称", "");
+        if (dirName != null) {
+          ajaxGetUtil("/mkdir?dirName=" + this.currentDir + dirName, function(
+            response
+          ) {
+            if (response.code == 1) {
+              _this.$message("文件全部上传成功");
+              _this.refreshDirData();
+            }else{
+              _this.$message("文件上传失败");
+            }
+          });
+        }
+      },
       //获取目录数据
       getDirData(dirName) {
         //如果不传目录名默认是家目录
-        if (dirName == undefined) {
-          dirName = "homeDir";
+        if (dirName == undefined || dirName == "/") {
+          dirName = "/";
         }
         var _this = this;
         ajaxGetUtil("/getDirData?dirName=" + dirName, function(response) {
-            var buff=[];
-            //将文件夹和文件排序
-            response.dirData.map(item=>{
-                if(item.isDir){
-                    buff.push(item);
-                }
-            });
-            response.dirData.map(item=>{
-                if(!item.isDir){
-                    buff.push(item);
-                }
-            });
+          var buff = [];
+          //将文件夹和文件排序
+          response.dirData.map(item => {
+            if (item.isDir) {
+              buff.push(item);
+            }
+          });
+          response.dirData.map(item => {
+            if (!item.isDir) {
+              buff.push(item);
+            }
+          });
 
-            _this.tableData = buff;
+          _this.tableData = buff;
         });
       },
-      getData(row){
-          //获取文件夹
-          if(row.isDir){
-              this.getDirData(row.fileName);
-          }else{//获取文件
-              //请求文件
-            //   ajaxGetUtil("/getFile?fileName="+row.fileName,function(){
-            //       console.log(1111)
-            //   })
-            location.href = "/getFile?fileName="+row.fileName
-
-          }
+      getData(row) {
+        //获取文件夹
+        if (row.isDir) {
+          this.backDir = this.currentDir; //保存上一级目录
+          this.currentDir = this.currentDir + row.fileName + "/";
+          this.getDirData(this.currentDir);
+        } else {
+          //获取文件(方法待改进)
+          location.href = "/getFile?fileName=" + row.fileName;
+        }
+      },
+      refreshDirData() {
+        this.getDirData(this.currentDir);
       }
     }
   });
