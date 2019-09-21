@@ -7,12 +7,14 @@
     <title>文件服务器</title>
 
     <!-- 引入样式 -->
+    <!-- 引入样式 -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"
     />
-    <!-- 引入组件库 -->
+    <!-- 先引入 Vue -->
     <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <!-- 引入组件库 -->
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
   </head>
   <body>
@@ -26,6 +28,8 @@
         :data="fileExtraData"
         :auto-upload="false"
         :limit="100"
+        :file-list="fileArr"
+        :on-change="onChange"
         :before-upload="beforeAvatarUpload"
         :on-success="uploadSuccess"
       >
@@ -39,9 +43,10 @@
             style="margin-left: 10px;"
             size="small"
             type="success"
-            @click="submitUpload"
-            >上传到服务器</el-button
+            @click="backDirHandle"
+            >返回上一级</el-button
           >
+
           <el-button
             style="margin-left: 10px;"
             size="small"
@@ -60,8 +65,22 @@
             style="margin-left: 10px;"
             size="small"
             type="success"
-            @click="backDirHandle"
-            >返回上一级</el-button
+            @click="submitUpload(1)"
+            >上传到服务器</el-button
+          >
+          <el-button
+            style="margin-left: 10px;"
+            size="small"
+            type="success"
+            @click="submitUpload(2)"
+            >上传到服务器并解压</el-button
+          >
+          <el-button
+            style="margin-left: 10px;"
+            size="small"
+            type="success"
+            @click="test()"
+            >test</el-button
           >
         </div>
       </el-upload>
@@ -81,23 +100,42 @@
           <template slot-scope="scope">
             <el-button
               size="mini"
-              @click="handleRename(scope.$index, scope.row)"
-              >重命名</el-button
-            >
-            <el-button
-              size="mini"
-              @click="handleRemove(scope.$index, scope.row)"
-              >移动</el-button
-            >
-            <el-button
-              size="mini"
               type="danger"
               @click="handleDelete(scope.$index, scope.row)"
               >删除</el-button
             >
+            <el-button
+              size="mini"
+              @click="handleRename(scope.$index, scope.row)"
+              >重命名</el-button
+            >
+            <el-button size="mini" @click="handleMove(scope.$index, scope.row)"
+              >移动</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 文件夹选择弹窗 -->
+      <el-dialog title="选择文件夹" :visible.sync="dialogVisible" width="40%">
+        <div>
+          <el-cascader
+            style="display:block"
+            size="small"
+            ref="dirTreeObj"
+            v-model="value"
+            :options="options"
+            :clearable="true"
+            filterable
+            :props="{ expandTrigger: 'hover', checkStrictly: true  }"
+          ></el-cascader>
+        </div>
+
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="moveSureClick">确 定</el-button>
+        </span>
+      </el-dialog>
     </div>
   </body>
 </html>
@@ -150,17 +188,51 @@
     el: "#app",
     data: function() {
       return {
+        // limieFileSize:100,//设置上传文件的数量限制
+        fileArr: [], //待上传文件的list列表
+        value: [], //文件夹选择值
+        options: [], //文件夹的选择数据
+        dialogVisible: false, //文件夹选择弹窗
         tableData: [],
-        fileList: [],
         fileExtraData: {}, //文件上传额外的数据
         uploadTimes: 0, //记录上传成功的个数
-        currentDir: "/" //记录当前访问的目录
+        currentDir: "/", //记录当前访问的目录
+        currentMoveNode: "" //记录当前正在移动的节点
       };
     },
     created() {
       this.getDirData();
     },
     methods: {
+      test() {
+        console.log("test======");
+      },
+      //在文件选择时会被触发
+      onChange(file, fileList) {
+        // console.log(fileList.length)
+      },
+      //移动文件夹的确定按钮点击事件
+      moveSureClick() {
+        var _this = this;
+        var node = this.$refs.dirTreeObj.getCheckedNodes()[0];
+
+        ajaxGetUtil(
+          "/move?srcPath=" +
+            this.currentMoveNode.relativePath +
+            "&targetPath=" +
+            node.value,
+          function(response) {
+            if (response.code == 1) {
+              _this.$message("文件移动成功");
+              _this.refreshDirData();
+            } else {
+              _this.$message("文件移动失败");
+            }
+          }
+        );
+
+        this.dialogVisible = false;
+      },
       //上传成功后提示信息,并清空文件列表
       uploadSuccess(response, file, fileList) {
         this.uploadTimes++;
@@ -172,17 +244,35 @@
       },
       //上传之前限制文件大小
       beforeAvatarUpload(file) {
-        const isLt10GB = file.size / 1024 / 1024 / 1024 < 10;
-
+        const isLt10GB = file.size / 1024 / 1024 / 1024 < 10; //文件大小不能超过10GB
         if (!isLt10GB) {
           this.$message.error("上传头像图片大小不能超过 10GB!");
+          return false;
         }
+
         this.uploadTimes = 0; //清空上传成功的统计个数
         return isLt10GB;
       },
       //点击上传文件
-      submitUpload() {
-        this.fileExtraData.dirName = this.currentDir;
+      submitUpload(flag) {
+        if (flag == 1) {
+          this.fileExtraData = {
+            dirName: this.currentDir
+          };
+        } else if (flag == 2) {
+          this.fileExtraData = {
+            dirName: this.currentDir,
+            isPackage: true
+          };
+          if (
+            this.fileExtraData.isPackage != undefined &&
+            this.$refs.upload.uploadFiles.length > 1
+          ) {
+            this.$message.error("压缩文件只能上传一个!");
+            this.clearFiles();
+            return;
+          }
+        }
         this.$refs.upload.submit();
       },
       //清除文件列表
@@ -197,7 +287,6 @@
         var i = undefined;
         for (i = currentDir.length - 1; i >= 0; i--) {
           if (currentDir[i] == "\\") {
-            i++;
             break;
           }
         }
@@ -212,60 +301,95 @@
       //重命名文件
       handleRename(index, row) {
         var _this = this;
-        var dirName = prompt("请输入文件夹名称", row.name);
-        if (dirName != null && dirName != undefined && dirName != "") {
-          ajaxGetUtil(
-            "/rename?relativePath=" + row.relativePath + "&fileName=" + dirName,
-            function(response) {
-              if (response.code == 1) {
-                _this.$message("文件重命名成功");
-                _this.refreshDirData();
-              } else {
-                _this.$message("文件重命名失败");
-              }
+        this.$prompt("请输入文件夹名称", "提示", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          inputValue: row.name
+        })
+          .then(({ value }) => {
+            if (value.trim() == "") {
+              this.$message({
+                type: "error",
+                message: "内容不能为空"
+              });
+              return;
             }
-          );
-        }
+            ajaxGetUtil(
+              "/rename?relativePath=" + row.relativePath + "&fileName=" + value,
+              function(response) {
+                if (response.code == 1) {
+                  _this.$message("文件重命名成功");
+                  _this.refreshDirData();
+                } else {
+                  _this.$message("文件重命名失败");
+                }
+              }
+            );
+          })
+          .catch(() => {});
       },
       //移动文件
-      handleRemove(index, row) {
-        console.log(index, row);
+      handleMove(index, row) {
+        var _this = this;
+        this.dialogVisible = true;
+        this.currentMoveNode = row;
+        ajaxGetUtil("/getDirTree", function(response) {
+          if (response.code == 1) {
+            _this.options = [response.data];
+          }
+        });
       },
       //删除文件
       handleDelete(index, row) {
         var _this = this;
-        ajaxGetUtil(
-          "deleteFile?filePath=" + this.currentDir + "/" + row.name,
-          function(response) {
-            if (response.code == 1) {
-              _this.$message("文件删除成功");
-              _this.refreshDirData();
-            } else {
-              _this.$message("文件删除失败");
-            }
-          }
-        );
+        this.$confirm("是否删除该文件?", "提示", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning"
+        })
+          .then(() => {
+            ajaxGetUtil(
+              "deleteFile?filePath=" + this.currentDir + "/" + row.name,
+              function(response) {
+                if (response.code == 1) {
+                  _this.$message("文件删除成功");
+                  _this.refreshDirData();
+                } else {
+                  _this.$message("文件删除失败");
+                }
+              }
+            );
+          })
+          .catch(() => {});
       },
       //创建文件夹
       mkDir() {
         var _this = this;
-        var dirName = prompt("请输入文件夹名称", "");
-        if (dirName != null && dirName != undefined && dirName != "") {
-          ajaxGetUtil(
-            "/mkdir?dirName=" + this.currentDir + "/" + dirName,
-            function(response) {
-              if (response.code == 1) {
-                _this.$message("文件夹创建成功");
-                _this.refreshDirData();
-              } else {
-                _this.$message("文件夹创建失败");
-              }
+        this.$prompt("请输入文件夹名称", "提示", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消"
+        })
+          .then(({ value }) => {
+            if (value.trim() == "") {
+              this.$message({
+                type: "error",
+                message: "内容不能为空"
+              });
+              return;
             }
-          );
-        } else {
-          _this.$message("请输入文件夹名称");
-          return;
-        }
+            ajaxGetUtil(
+              "/mkdir?dirName=" + this.currentDir + "/" + value,
+              function(response) {
+                if (response.code == 1) {
+                  _this.$message("文件夹创建成功");
+                  _this.refreshDirData();
+                } else {
+                  _this.$message("文件夹创建失败");
+                }
+              }
+            );
+          })
+          .catch(() => {});
       },
       //获取目录数据
       getDirData(dirName) {

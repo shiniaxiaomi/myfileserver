@@ -8,6 +8,7 @@ moment.locale("zh-cn");
 
 //资源文件的根目录对象
 var root = undefined;
+var dirTreeObj = undefined;
 
 //指定资源文件路径
 var resourceDir = path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
@@ -44,6 +45,7 @@ app.get("/", function(req, res) {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+//重命名文件或文件夹
 app.get("/rename", function(req, res) {
   var srcPath = path.join(resourceDir, req.query.relativePath);
   var backPath = computerBackDir(srcPath);
@@ -51,7 +53,27 @@ app.get("/rename", function(req, res) {
 
   shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
   refreshResourceDirObj();
+  refreshDirTreeObj();
   res.json({ code: 1 });
+});
+
+//移动文件
+app.get("/move", function(req, res) {
+  var srcPath = path.join(resourceDir, req.query.srcPath);
+  var targetpath = path.join(resourceDir, req.query.targetPath);
+
+  shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
+  refreshResourceDirObj();
+  refreshDirTreeObj();
+
+  res.json({ code: 1});
+});
+
+app.get("/getDirTree", function(req, res) {
+  if (dirTreeObj == undefined) {
+    dirTreeObj = getDirTreeObj();
+  }
+  res.json({ code: 1, data: dirTreeObj });
 });
 
 //获取文件夹数据
@@ -91,7 +113,9 @@ app.get("/getFile", function(req, res) {
 
 //上传文件
 app.post("/upload", upload.any(), function(req, res) {
+
   refreshResourceDirObj();
+  refreshDirTreeObj();
   res.sendStatus(200);
 });
 
@@ -99,6 +123,7 @@ app.post("/upload", upload.any(), function(req, res) {
 app.get("/mkDir", function(req, res) {
   createFolder(path.join(resourceDir, req.query.dirName));
   refreshResourceDirObj();
+  refreshDirTreeObj();
   res.json({ code: 1 });
 });
 
@@ -106,14 +131,49 @@ app.get("/mkDir", function(req, res) {
 app.get("/deleteFile", function(req, res) {
   shell.rm("-rf", path.join(resourceDir, req.query.filePath)); //强制删除目录或文件
   refreshResourceDirObj();
+  refreshDirTreeObj();
   res.json({ code: 1 });
 });
 
-//重命名文件或文件夹
-//移动文件
+//上传文件夹,需要先在本地打包好,再上传
 
-//上传文件夹
+
+
 //搜索文件或文件夹
+
+//刷新目录文件夹树对象
+function refreshDirTreeObj(){
+    dirTreeObj=getDirTreeObj();
+}
+
+//获取资源目录的目录树对象
+function getDirTreeObj() {
+  var buff = {};
+
+  buildDirTree(root, buff);
+  return buff.children[0];
+}
+
+//生成资源目录的目录树
+function buildDirTree(node, buffNode) {
+  if (!node.isDir) {
+    return;
+  }
+
+  //当没有children数组时,创建children数组
+  if (buffNode.children == undefined) {
+    buffNode.children = [];
+  }
+
+  var buffChildren = {
+    value: node.relativePath,
+    label: node.name
+  };
+  buffNode.children.push(buffChildren);
+  node.children.forEach(item => {
+    buildDirTree(item, buffChildren);
+  });
+}
 
 //处理文件的大小
 function handleSize(size) {
@@ -230,7 +290,6 @@ function computerBackDir(currentDir) {
   var i = undefined;
   for (i = currentDir.length - 1; i >= 0; i--) {
     if (currentDir[i] == "\\") {
-      i++;
       break;
     }
   }
