@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const moment = require("moment");
 var shell = require("shelljs");
+var unzip = require("unzip"); //解压zip模块
 moment.locale("zh-cn");
 
 //资源文件的根目录对象
@@ -23,6 +24,22 @@ var storage = multer.diskStorage({
   },
   filename: function(req, file, cb) {
     cb(null, file.originalname);
+
+    if (req.body.isPackage) {
+      //如果是.zip压缩包
+      if (file.originalname.indexOf(".zip") != -1) {
+        var targetPath = path.join(resourceDir, req.body.dirName);
+        var filePath = path.join(
+          resourceDir,
+          req.body.dirName,
+          file.originalname
+        );
+        //解压
+        fs.createReadStream(filePath).pipe(unzip.Extract({ path: targetPath }));
+        //删除压缩包
+        shell.rm("-rf", filePath);
+      }
+    }
   }
 });
 var upload = multer({
@@ -66,7 +83,7 @@ app.get("/move", function(req, res) {
   refreshResourceDirObj();
   refreshDirTreeObj();
 
-  res.json({ code: 1});
+  res.json({ code: 1 });
 });
 
 app.get("/getDirTree", function(req, res) {
@@ -113,7 +130,6 @@ app.get("/getFile", function(req, res) {
 
 //上传文件
 app.post("/upload", upload.any(), function(req, res) {
-
   refreshResourceDirObj();
   refreshDirTreeObj();
   res.sendStatus(200);
@@ -137,13 +153,11 @@ app.get("/deleteFile", function(req, res) {
 
 //上传文件夹,需要先在本地打包好,再上传
 
-
-
 //搜索文件或文件夹
 
 //刷新目录文件夹树对象
-function refreshDirTreeObj(){
-    dirTreeObj=getDirTreeObj();
+function refreshDirTreeObj() {
+  dirTreeObj = getDirTreeObj();
 }
 
 //获取资源目录的目录树对象

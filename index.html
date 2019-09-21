@@ -5,17 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>文件服务器</title>
-
-    <!-- 引入样式 -->
-    <!-- 引入样式 -->
     <link
+      href="https://cdn.bootcss.com/element-ui/2.12.0/theme-chalk/index.css"
       rel="stylesheet"
-      href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"
     />
-    <!-- 先引入 Vue -->
-    <script src="https://unpkg.com/vue/dist/vue.js"></script>
-    <!-- 引入组件库 -->
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.bootcss.com/vue/2.6.10/vue.min.js"></script>
+    <script src="https://cdn.bootcss.com/element-ui/2.12.0/index.js"></script>
   </head>
   <body>
     <div id="app">
@@ -256,21 +251,20 @@
       //点击上传文件
       submitUpload(flag) {
         if (flag == 1) {
-          this.fileExtraData = {
-            dirName: this.currentDir
-          };
+          this.fileExtraData.dirName = this.currentDir;
+          this.fileExtraData.isPackage = false;
+          this.fileExtraData.fileName = "";
         } else if (flag == 2) {
-          this.fileExtraData = {
-            dirName: this.currentDir,
-            isPackage: true
-          };
+          this.fileExtraData.dirName = this.currentDir;
+          this.fileExtraData.isPackage = true;
+          this.fileExtraData.fileName = ;
           if (
             this.fileExtraData.isPackage != undefined &&
             this.$refs.upload.uploadFiles.length > 1
           ) {
             this.$message.error("压缩文件只能上传一个!");
             this.clearFiles();
-            return;
+            return false;
           }
         }
         this.$refs.upload.submit();

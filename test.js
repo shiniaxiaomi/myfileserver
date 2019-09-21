@@ -1,6 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 const moment = require("moment");
+var shell = require("shelljs");
+var archiver = require("archiver");
+var unzip = require("unzip");
+
+fs.createReadStream(
+  "D:\\code\\myfileserver\\upload\\ceshi\\Untitled-1.zip"
+).pipe(unzip.Extract({ path: "D:\\code\\myfileserver\\upload\\ceshi\\" }));
+return;
 
 var root = {
   children: []
@@ -55,33 +63,30 @@ function computeDirSize(obj, basePath, relativePath, name) {
 computeDirSize(root, "F:\\code\\myfileserver\\upload", "/", "upload");
 // console.log(root);
 
-
-
 var dirbuff = {};
 //获取资源目录的目录树
-function getDirTree(node,buffNode) {
+function getDirTree(node, buffNode) {
   if (!node.isDir) {
     return;
   }
 
   //当没有children数组时,创建children数组
-  if(buffNode.children==undefined){
-    buffNode.children=[];
+  if (buffNode.children == undefined) {
+    buffNode.children = [];
   }
-  
-  var buffChildren={
+
+  var buffChildren = {
     value: node.relativePath,
-    label: node.name,
+    label: node.name
   };
   buffNode.children.push(buffChildren);
   node.children.forEach(item => {
-    getDirTree(item,buffChildren);
+    getDirTree(item, buffChildren);
   });
 }
 
-getDirTree(root.children[0],dirbuff);
-console.log(dirbuff)
-
+getDirTree(root.children[0], dirbuff);
+console.log(dirbuff);
 
 // root = root.children[0];
 // var files = getDirDataByUrl(root, "/");
