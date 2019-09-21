@@ -79,8 +79,15 @@
         <el-table-column prop="size" label="大小"> </el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.$index, scope.row)"
-              >编辑</el-button
+            <el-button
+              size="mini"
+              @click="handleRename(scope.$index, scope.row)"
+              >重命名</el-button
+            >
+            <el-button
+              size="mini"
+              @click="handleRemove(scope.$index, scope.row)"
+              >移动</el-button
             >
             <el-button
               size="mini"
@@ -147,8 +154,7 @@
         fileList: [],
         fileExtraData: {}, //文件上传额外的数据
         uploadTimes: 0, //记录上传成功的个数
-        currentDir: "/", //记录当前访问的目录
-        backDir: "/" //记录上一级目录
+        currentDir: "/" //记录当前访问的目录
       };
     },
     created() {
@@ -183,19 +189,46 @@
       clearFiles() {
         this.$refs.upload.clearFiles();
       },
-      // 返回上一级目录
-      backDirHandle() {
-        var arr = this.currentDir.split("\\");
-        var path = "";
-        for (var i = 0; i < arr.length - 1; i++) {
-          if (arr[i] == "") continue;
-          path += "\\" + arr[i];
+      //根据当前目录计算上一级目录
+      computerBackDir(currentDir) {
+        if (currentDir == "\\") {
+          return "\\";
         }
-        this.getDirData(path == "" ? "/" : path);
+        var i = undefined;
+        for (i = currentDir.length - 1; i >= 0; i--) {
+          if (currentDir[i] == "\\") {
+            i++;
+            break;
+          }
+        }
+        return currentDir.substring(0, i);
+      },
+      // 返回上一级目录(根据当前的目录推算出上一级目录)
+      backDirHandle() {
+        var path = this.computerBackDir(this.currentDir);
+        this.getDirData(path);
         this.currentDir = path;
       },
-      //编辑文件
-      handleEdit(index, row) {
+      //重命名文件
+      handleRename(index, row) {
+        var _this = this;
+        var dirName = prompt("请输入文件夹名称", row.name);
+        if (dirName != null && dirName != undefined && dirName != "") {
+          ajaxGetUtil(
+            "/rename?relativePath=" + row.relativePath + "&fileName=" + dirName,
+            function(response) {
+              if (response.code == 1) {
+                _this.$message("文件重命名成功");
+                _this.refreshDirData();
+              } else {
+                _this.$message("文件重命名失败");
+              }
+            }
+          );
+        }
+      },
+      //移动文件
+      handleRemove(index, row) {
         console.log(index, row);
       },
       //删除文件
@@ -229,6 +262,9 @@
               }
             }
           );
+        } else {
+          _this.$message("请输入文件夹名称");
+          return;
         }
       },
       //获取目录数据
@@ -260,11 +296,10 @@
       getData(row) {
         //获取文件夹
         if (row.isDir) {
-          this.backDir = row.currentDir; //保存现在目录为返回目录
           this.getDirData(row.relativePath);
         } else {
           //获取文件(方法待改进)
-          location.href = "/getFile?fileName=" + row.fileName;
+          location.href = "/getFile?fileName=" + row.name;
         }
       },
       refreshDirData() {

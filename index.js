@@ -44,6 +44,16 @@ app.get("/", function(req, res) {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+app.get("/rename", function(req, res) {
+  var srcPath = path.join(resourceDir, req.query.relativePath);
+  var backPath = computerBackDir(srcPath);
+  var targetpath = path.join(backPath, req.query.fileName);
+
+  shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
+  refreshResourceDirObj();
+  res.json({ code: 1 });
+});
+
 //获取文件夹数据
 app.get("/getDirData", function(req, res) {
   //实现懒加载
@@ -210,4 +220,19 @@ function computeDirSize(obj, basePath, relativePath, name) {
   });
   dirItem.size = buff;
   return buff;
+}
+
+//根据当前目录计算上一级目录
+function computerBackDir(currentDir) {
+  if (currentDir == "\\") {
+    return "\\";
+  }
+  var i = undefined;
+  for (i = currentDir.length - 1; i >= 0; i--) {
+    if (currentDir[i] == "\\") {
+      i++;
+      break;
+    }
+  }
+  return currentDir.substring(0, i);
 }
