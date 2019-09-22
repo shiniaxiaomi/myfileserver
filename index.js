@@ -30,10 +30,10 @@ var autoLoginFailed = 2; //自动登入失败
 
 //指定资源文件路径
 var resourceDir = undefined;
-if(os.type()!="Windows_NT"){
- resourceDir=path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
-}else{//线上
+if(os.type()!="Windows_NT"){//线上
   resourceDir="/myFileServer";
+}else{//本地
+  resourceDir=path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
 }
 
 
