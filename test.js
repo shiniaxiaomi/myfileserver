@@ -5,6 +5,12 @@ var shell = require("shelljs");
 var archiver = require("archiver");
 var unzip = require("unzip");
 
+shell.exec(
+  "unzip -O gbk -d D:\\code\\myfileserver\\upload D:\\code\\myfileserver\\upload\\note.zip"
+);
+
+return;
+
 var root = {
   children: []
 };
@@ -79,22 +85,20 @@ function getDirTree(node, buffNode) {
 getDirTree(root.children[0], dirbuff);
 // console.log(dirbuff);
 
+var buffList = [];
 
-var buffList=[];
-
-function searchFile(buffList,node,fileName){
-  if(!node.isDir){
-    if(node.name.toLowerCase().indexOf(fileName.toLowerCase())!=-1){
-      buffList.push(node)
+function searchFile(buffList, node, fileName) {
+  if (!node.isDir) {
+    if (node.name.toLowerCase().indexOf(fileName.toLowerCase()) != -1) {
+      buffList.push(node);
     }
     return;
   }
 
-  node.children.forEach(item=>{
-    searchFile(buffList,item,fileName)
-  })
+  node.children.forEach(item => {
+    searchFile(buffList, item, fileName);
+  });
 }
 
-
-searchFile(buffList,root.children[0],"ja");
-console.log(buffList)
+searchFile(buffList, root.children[0], "ja");
+console.log(buffList);

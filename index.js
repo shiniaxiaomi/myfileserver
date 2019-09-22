@@ -28,8 +28,8 @@ var successed = 1;
 var autoLoginFailed = 2; //自动登入失败
 
 //指定资源文件路径
-var resourceDir = undefined;//指定资源文件夹的路径
-var resorrceDirName = undefined;//指定资源文件夹的name,用于页面中移动文件名称的显示
+var resourceDir = undefined; //指定资源文件夹的路径
+var resorrceDirName = undefined; //指定资源文件夹的name,用于页面中移动文件名称的显示
 if (os.type() != "Windows_NT") {
   //线上
   resourceDir = "/myFileServer";
@@ -123,16 +123,31 @@ app.get("/unzip", function(req, res) {
   var targetPath = path.join(resourceDir, req.query.dirName);
   var filePath = path.join(resourceDir, req.query.dirName, req.query.fileName);
 
-  compressing.zip
-    .uncompress(filePath, targetPath)
-    .then(() => {
+  //指定编码进行解压
+  if (os.type() != "Windows_NT") {
+    //线上
+    shell.exec("unzip -O gbk -d " + targetPath + " " + filePath, function(
+      code,
+      stdout,
+      stderr
+    ) {
       refreshResourceDirObj();
       refreshDirTreeObj();
       res.json({ code: 1 });
-    })
-    .catch(err => {
-      console.error(err);
     });
+  } else {
+    //本地
+    compressing.zip
+      .uncompress(filePath, targetPath)
+      .then(() => {
+        refreshResourceDirObj();
+        refreshDirTreeObj();
+        res.json({ code: 1 });
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }
 });
 
 //压缩
@@ -154,11 +169,10 @@ app.get("/zip", function(req, res) {
 
 //重命名文件或文件夹
 app.get("/rename", function(req, res) {
-  
   var srcPath = path.join(resourceDir, req.query.relativePath);
   var backPath = computerBackDir(srcPath);
   var targetpath = path.join(backPath, req.query.fileName);
-  console.log(srcPath,backPath,targetpath)
+  console.log(srcPath, backPath, targetpath);
 
   shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
   refreshResourceDirObj();
@@ -170,8 +184,7 @@ app.get("/rename", function(req, res) {
 app.get("/move", function(req, res) {
   var srcPath = path.join(resourceDir, req.query.srcPath);
   var targetpath = path.join(resourceDir, req.query.targetPath);
-  console.log(srcPath,targetpath)
-
+  console.log(srcPath, targetpath);
 
   shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
   refreshResourceDirObj();
@@ -408,12 +421,12 @@ function computeDirSize(obj, basePath, relativePath, name) {
 
 //根据当前目录计算上一级目录
 function computerBackDir(currentDir) {
-  if (currentDir == "\\"||currentDir=="/") {
+  if (currentDir == "\\" || currentDir == "/") {
     return "\\";
   }
   var i = undefined;
   for (i = currentDir.length - 1; i >= 0; i--) {
-    if (currentDir[i] == "\\"||currentDir[i]=="/") {
+    if (currentDir[i] == "\\" || currentDir[i] == "/") {
       break;
     }
   }
