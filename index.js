@@ -154,9 +154,11 @@ app.get("/zip", function(req, res) {
 
 //重命名文件或文件夹
 app.get("/rename", function(req, res) {
+  
   var srcPath = path.join(resourceDir, req.query.relativePath);
   var backPath = computerBackDir(srcPath);
   var targetpath = path.join(backPath, req.query.fileName);
+  console.log(srcPath,backPath,targetpath)
 
   shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
   refreshResourceDirObj();
@@ -168,6 +170,8 @@ app.get("/rename", function(req, res) {
 app.get("/move", function(req, res) {
   var srcPath = path.join(resourceDir, req.query.srcPath);
   var targetpath = path.join(resourceDir, req.query.targetPath);
+  console.log(srcPath,targetpath)
+
 
   shell.mv(srcPath, targetpath); //当当前目录移动,即重命名
   refreshResourceDirObj();
