@@ -158,7 +158,7 @@
       if (httpRequest.readyState == 4 && httpRequest.status == 200) {
         var data = JSON.parse(httpRequest.responseText);
         if (data.code == 0) {
-          // alert(data.data);
+          alert(data.data);
           //自动刷新页面
           // location.reload();
           return;
@@ -181,7 +181,7 @@
         //验证请求是否发送成功
         var data = JSON.parse(httpRequest.responseText);
         if (data.code == 0) {
-          // alert(data.data);
+          alert(data.data);
           //自动刷新页面
           // location.reload();
           return;
