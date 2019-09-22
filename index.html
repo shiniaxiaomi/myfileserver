@@ -60,15 +60,8 @@
             style="margin-left: 10px;"
             size="small"
             type="success"
-            @click="submitUpload(1)"
+            @click="submitUpload"
             >上传到服务器</el-button
-          >
-          <el-button
-            style="margin-left: 10px;"
-            size="small"
-            type="success"
-            @click="submitUpload(2)"
-            >上传到服务器并解压</el-button
           >
           <el-button
             style="margin-left: 10px;"
@@ -106,6 +99,18 @@
             >
             <el-button size="mini" @click="handleMove(scope.$index, scope.row)"
               >移动</el-button
+            >
+            <el-button
+              v-if="scope.row.name.indexOf('.zip')!=-1"
+              size="mini"
+              @click="handleUnzip(scope.$index, scope.row)"
+              >解压</el-button
+            >
+            <el-button
+              v-if="scope.row.name.indexOf('.zip')==-1"
+              size="mini"
+              @click="handleZip(scope.$index, scope.row)"
+              >压缩</el-button
             >
           </template>
         </el-table-column>
@@ -249,22 +254,8 @@
         return isLt10GB;
       },
       //点击上传文件
-      submitUpload(flag) {
-        if (flag == 1) {
-          this.fileExtraData.dirName = this.currentDir;
-          this.fileExtraData.isPackage = false;
-        } else if (flag == 2) {
-          this.fileExtraData.dirName = this.currentDir;
-          this.fileExtraData.isPackage = true;
-          if (
-            this.fileExtraData.isPackage != undefined &&
-            this.$refs.upload.uploadFiles.length > 1
-          ) {
-            this.$message.error("压缩文件只能上传一个!");
-            this.clearFiles();
-            return false;
-          }
-        }
+      submitUpload() {
+        this.fileExtraData.dirName = this.currentDir;
         this.$refs.upload.submit();
       },
       //清除文件列表
@@ -330,6 +321,24 @@
             _this.options = [response.data];
           }
         });
+      },
+      //解压
+      handleUnzip(index, row) {
+        ajaxGetUtil(
+          "/unzip?dirName=" + this.currentDir + "&fileName=" + row.name,
+          function(response) {
+            console.log(response);
+          }
+        );
+      },
+      //压缩
+      handleZip(index, row) {
+        ajaxGetUtil(
+          "/zip?dirName=" + this.currentDir + "&fileName=" + row.name,
+          function(response) {
+            console.log(response);
+          }
+        );
       },
       //删除文件
       handleDelete(index, row) {

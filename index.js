@@ -25,21 +25,21 @@ var storage = multer.diskStorage({
   filename: function(req, file, cb) {
     cb(null, file.originalname);
 
-    if (req.body.isPackage) {
-      //如果是.zip压缩包
-      if (file.originalname.indexOf(".zip") != -1) {
-        var targetPath = path.join(resourceDir, req.body.dirName);
-        var filePath = path.join(
-          resourceDir,
-          req.body.dirName,
-          file.originalname
-        );
-        //解压
-        fs.createReadStream(filePath).pipe(unzip.Extract({ path: targetPath }));
-        //删除压缩包
-        shell.rm("-rf", filePath);
-      }
-    }
+    // if (req.body.isPackage) {
+    //   //如果是.zip压缩包
+    //   if (file.originalname.indexOf(".zip") != -1) {
+    //     var targetPath = path.join(resourceDir, req.body.dirName);
+    //     var filePath = path.join(
+    //       resourceDir,
+    //       req.body.dirName,
+    //       file.originalname
+    //     );
+    //     //解压
+    //     fs.createReadStream(filePath).pipe(unzip.Extract({ path: targetPath }));
+    //     //删除压缩包
+    //     fs.unlinkSync(filePath);
+    //   }
+    // }
   }
 });
 var upload = multer({
@@ -60,6 +60,25 @@ var server = app.listen(80, function() {
 //当'/'请求时返回首页
 app.get("/", function(req, res) {
   res.sendFile(path.join(__dirname, "index.html"));
+});
+
+//解压
+app.get("/unzip", function(req, res) {
+  var targetPath = path.join(resourceDir, req.body.dirName);
+  var filePath = path.join(resourceDir, req.body.dirName, req.body.fileName);
+  //解压
+  fs.createReadStream(filePath).pipe(unzip.Extract({ path: targetPath }));
+
+  refreshResourceDirObj();
+  refreshDirTreeObj();
+  res.json({ code: 1 });
+});
+
+//压缩
+app.get("/zip", function(req, res) {
+  refreshResourceDirObj();
+  refreshDirTreeObj();
+  res.json({ code: 1 });
 });
 
 //重命名文件或文件夹
@@ -255,6 +274,7 @@ function getResourceDirObj() {
 //filePath是要计算的文件夹路径,name是该文件夹的名称,obj是计算后生成的对应的文件夹的对象
 function computeDirSize(obj, basePath, relativePath, name) {
   var stat = fs.statSync(path.join(basePath, relativePath));
+
   //是文件
   if (!stat.isDirectory()) {
     obj.children.push({
