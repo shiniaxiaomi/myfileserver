@@ -60,7 +60,7 @@ var upload = multer({
 createFolder(resourceDir); //不存在则创建资源文件夹
 
 //启动server并监听再80端口
-var server = app.listen(80, function() {
+var server = app.listen(8001, function() {
   console.log("应用实例启动成功!");
 });
 
