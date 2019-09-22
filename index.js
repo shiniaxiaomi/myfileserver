@@ -408,12 +408,12 @@ function computeDirSize(obj, basePath, relativePath, name) {
 
 //根据当前目录计算上一级目录
 function computerBackDir(currentDir) {
-  if (currentDir == "\\") {
+  if (currentDir == "\\"||currentDir=="/") {
     return "\\";
   }
   var i = undefined;
   for (i = currentDir.length - 1; i >= 0; i--) {
-    if (currentDir[i] == "\\") {
+    if (currentDir[i] == "\\"||currentDir[i]=="/") {
       break;
     }
   }
