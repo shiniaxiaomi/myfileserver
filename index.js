@@ -126,15 +126,12 @@ app.get("/unzip", function(req, res) {
   //指定编码进行解压
   if (os.type() != "Windows_NT") {
     //线上
-    shell.exec("unzip -O gbk -d " + targetPath + " " + filePath, function(
-      code,
-      stdout,
-      stderr
-    ) {
-      refreshResourceDirObj();
-      refreshDirTreeObj();
-      res.json({ code: 1 });
-    });
+    shell.exec("unzip -O gbk -d " + targetPath + " " + filePath, {
+      async: true
+    }); //同步的执行解压操作
+    refreshResourceDirObj();
+    refreshDirTreeObj();
+    res.json({ code: 1 });
   } else {
     //本地
     compressing.zip
