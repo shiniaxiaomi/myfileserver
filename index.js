@@ -33,11 +33,11 @@ var resorrceDirName = undefined;//指定资源文件夹的name,用于页面中�
 if (os.type() != "Windows_NT") {
   //线上
   resourceDir = "/myFileServer";
-  resorrceDirName = "/myFileServer";
+  resorrceDirName = "myFileServer";
 } else {
   //本地
   resourceDir = path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
-  resorrceDirName = "/upload";
+  resorrceDirName = "upload";
 }
 
 var multer = require("multer"); //引入multer
