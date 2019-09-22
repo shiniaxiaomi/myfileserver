@@ -4,15 +4,38 @@ const path = require("path");
 const fs = require("fs");
 const moment = require("moment");
 var shell = require("shelljs");
-var unzip = require("unzip"); //解压zip模块
+const compressing = require("compressing");
 moment.locale("zh-cn");
+var bodyParser = require("body-parser");
+const os=require("os");
+
+
+//session
+var session = require("express-session");
+app.use(
+  session({
+    secret: "this is a string key", //加密的字符串，里面内容可以随便写
+    resave: false, //强制保存session,即使它没变化
+    saveUninitialized: true //强制将未初始化的session存储，默认为true
+  })
+);
 
 //资源文件的根目录对象
 var root = undefined;
 var dirTreeObj = undefined;
 
+var failed = 0;
+var successed = 1;
+var autoLoginFailed = 2; //自动登入失败
+
 //指定资源文件路径
-var resourceDir = path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
+var resourceDir = undefined;
+if(os.type()!="Windows_NT"){
+ resourceDir=path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
+}else{//线上
+  resourceDir="/myFileServer";
+}
+
 
 var multer = require("multer"); //引入multer
 //文件存储的配置
@@ -24,22 +47,6 @@ var storage = multer.diskStorage({
   },
   filename: function(req, file, cb) {
     cb(null, file.originalname);
-
-    // if (req.body.isPackage) {
-    //   //如果是.zip压缩包
-    //   if (file.originalname.indexOf(".zip") != -1) {
-    //     var targetPath = path.join(resourceDir, req.body.dirName);
-    //     var filePath = path.join(
-    //       resourceDir,
-    //       req.body.dirName,
-    //       file.originalname
-    //     );
-    //     //解压
-    //     fs.createReadStream(filePath).pipe(unzip.Extract({ path: targetPath }));
-    //     //删除压缩包
-    //     fs.unlinkSync(filePath);
-    //   }
-    // }
   }
 });
 var upload = multer({
@@ -57,28 +64,90 @@ var server = app.listen(80, function() {
   console.log("应用实例启动成功!");
 });
 
+//设置拦截器
+app.all('*', function (req, res, next) {
+  if(req.session.isLogin != undefined){
+    next();
+    return;
+  }
+
+  if(req.path=="/"|| req.path=="/login" || req.path=="/autoLogin" ){
+    next();
+    return;
+  }
+
+  if (req.session.isLogin == undefined) {
+    res.json({ code: 0, data: "请先登入" })
+    return;
+  }
+})
+
 //当'/'请求时返回首页
 app.get("/", function(req, res) {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+app.post("/login", bodyParser.json(), function(req, res) {
+  if (req.session.isLogin) {
+    res.send({ code: successed, data: "登入成功!" });
+    return;
+  }
+
+  if (req.body.password == "123456") {
+    req.session.isLogin = true;
+    res.send({ code: successed, data: "登入成功!" });
+  } else {
+    res.send({ code: failed, data: "密码错误" });
+  }
+});
+
+app.post("/autoLogin", bodyParser.json(), function(req, res) {
+  if (req.session.isLogin) {
+    res.send({ code: successed, data: "登入成功!" });
+    return;
+  }
+
+  if (req.body.password == "123456") {
+    req.session.isLogin = true;
+    res.send({ code: successed, data: "登入成功!" });
+  } else {
+    res.send({ code: autoLoginFailed, data: "密码错误" });
+  }
+});
+
+
 //解压
 app.get("/unzip", function(req, res) {
-  var targetPath = path.join(resourceDir, req.body.dirName);
-  var filePath = path.join(resourceDir, req.body.dirName, req.body.fileName);
-  //解压
-  fs.createReadStream(filePath).pipe(unzip.Extract({ path: targetPath }));
+  var targetPath = path.join(resourceDir, req.query.dirName);
+  var filePath = path.join(resourceDir, req.query.dirName, req.query.fileName);
 
-  refreshResourceDirObj();
-  refreshDirTreeObj();
-  res.json({ code: 1 });
+  compressing.zip
+    .uncompress(filePath, targetPath)
+    .then(() => {
+      refreshResourceDirObj();
+      refreshDirTreeObj();
+      res.json({ code: 1 });
+    })
+    .catch(err => {
+      console.error(err);
+    });
 });
 
 //压缩
 app.get("/zip", function(req, res) {
-  refreshResourceDirObj();
-  refreshDirTreeObj();
-  res.json({ code: 1 });
+  var targetPath = path.join(resourceDir, req.query.dirName);
+  var filePath = path.join(resourceDir, req.query.dirName, req.query.fileName);
+
+  compressing.zip
+    .compressDir(filePath, filePath + ".zip")
+    .then(() => {
+      refreshResourceDirObj();
+      refreshDirTreeObj();
+      res.json({ code: 1 });
+    })
+    .catch(err => {
+      console.error(err);
+    });
 });
 
 //重命名文件或文件夹
@@ -105,6 +174,7 @@ app.get("/move", function(req, res) {
   res.json({ code: 1 });
 });
 
+//获取dir文件树
 app.get("/getDirTree", function(req, res) {
   if (dirTreeObj == undefined) {
     dirTreeObj = getDirTreeObj();
@@ -144,7 +214,7 @@ app.get("/getFile", function(req, res) {
     "Content-Disposition":
       "attachment; filename=" + encodeURI(req.query.fileName) //告诉浏览器这是一个需要下载的文件
   });
-  res.sendFile(path.join(resourceDir, req.query.fileName));
+  res.sendFile(path.join(resourceDir, req.query.relativePath));
 });
 
 //上传文件
@@ -170,9 +240,23 @@ app.get("/deleteFile", function(req, res) {
   res.json({ code: 1 });
 });
 
-//上传文件夹,需要先在本地打包好,再上传
-
 //搜索文件或文件夹
+app.get("/searchFile", function(req, res) {
+  var buff = [];
+  searchFile(buff, root, req.query.fileName);
+  var list = [];
+  buff.forEach(item => {
+    list.push({
+      name: item.name,
+      updateTime: item.updateTime,
+      isDir: item.isDir,
+      size: item.size,
+      absolutePath: item.absolutePath,
+      relativePath: item.relativePath
+    });
+  });
+  res.json({ code: 1, data: list });
+});
 
 //刷新目录文件夹树对象
 function refreshDirTreeObj() {
@@ -328,4 +412,21 @@ function computerBackDir(currentDir) {
     }
   }
   return currentDir.substring(0, i);
+}
+
+//搜索文件
+function searchFile(buffList, node, fileName) {
+  if (!node.isDir) {
+    if (node.name.toLowerCase().indexOf(fileName.toLowerCase()) != -1) {
+      buffList.push(node);
+    }
+    return;
+  }
+
+  if (node.name.toLowerCase().indexOf(fileName.toLowerCase()) != -1) {
+    buffList.push(node);
+  }
+  node.children.forEach(item => {
+    searchFile(buffList, item, fileName);
+  });
 }

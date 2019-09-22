@@ -5,17 +5,9 @@ var shell = require("shelljs");
 var archiver = require("archiver");
 var unzip = require("unzip");
 
-fs.createReadStream(
-  "D:\\code\\myfileserver\\upload\\ceshi\\Untitled-1.zip"
-).pipe(unzip.Extract({ path: "D:\\code\\myfileserver\\upload\\ceshi\\" }));
-return;
-
 var root = {
   children: []
 };
-
-// var obj = { size: 0 };
-// var buff = { size: 0 };
 
 // //计算文件夹或文件的大小
 //obj是path对应的文件,name是obj的文件名
@@ -61,7 +53,6 @@ function computeDirSize(obj, basePath, relativePath, name) {
 }
 
 computeDirSize(root, "F:\\code\\myfileserver\\upload", "/", "upload");
-// console.log(root);
 
 var dirbuff = {};
 //获取资源目录的目录树
@@ -86,25 +77,24 @@ function getDirTree(node, buffNode) {
 }
 
 getDirTree(root.children[0], dirbuff);
-console.log(dirbuff);
+// console.log(dirbuff);
 
-// root = root.children[0];
-// var files = getDirDataByUrl(root, "/");
-// console.log(files);
 
-// function getDirDataByUrl(root, relativePath) {
-//   if (root.relativePath == relativePath) {
-//     if (root.children == undefined) {
-//       return [root];
-//     } else {
-//       return root.children;
-//     }
-//   }
-//   //如果是文件,则直接返回[]
-//   if (root.children == undefined) {
-//     return [];
-//   }
-//   root.children.forEach(item => {
-//     return getDirDataByUrl(item, relativePath);
-//   });
-// }
+var buffList=[];
+
+function searchFile(buffList,node,fileName){
+  if(!node.isDir){
+    if(node.name.toLowerCase().indexOf(fileName.toLowerCase())!=-1){
+      buffList.push(node)
+    }
+    return;
+  }
+
+  node.children.forEach(item=>{
+    searchFile(buffList,item,fileName)
+  })
+}
+
+
+searchFile(buffList,root.children[0],"ja");
+console.log(buffList)

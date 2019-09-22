@@ -9,112 +9,119 @@
       href="https://cdn.bootcss.com/element-ui/2.12.0/theme-chalk/index.css"
       rel="stylesheet"
     />
+    <!-- icon -->
+    <link
+      rel="stylesheet"
+      href="https://at.alicdn.com/t/font_1429011_s6299sj4zv.css"
+    />
     <script src="https://cdn.bootcss.com/vue/2.6.10/vue.min.js"></script>
     <script src="https://cdn.bootcss.com/element-ui/2.12.0/index.js"></script>
   </head>
   <body>
     <div id="app">
-      <el-upload
-        class="upload-demo"
-        drag
-        ref="upload"
-        multiple
-        action="/upload"
-        :data="fileExtraData"
-        :auto-upload="false"
-        :limit="100"
-        :file-list="fileArr"
-        :on-change="onChange"
-        :before-upload="beforeAvatarUpload"
-        :on-success="uploadSuccess"
-      >
-        <i class="el-icon-upload"></i>
-        <div class="el-upload__text">将文件拖到此处 或 点击上传</div>
-        <div class="el-upload__tip" slot="tip">
-          最多一次性上传100个文件,文件大小不能超过10G
-        </div>
-        <div class="el-upload__tip" slot="tip">
-          <el-button
-            style="margin-left: 10px;"
-            size="small"
-            type="success"
-            @click="backDirHandle"
+      <el-row style="margin:10px">
+        <el-input
+          v-model="keyword"
+          placeholder="请输入要搜索的文件名称"
+          clearable
+          @keyup.enter.native="searchFile"
+        ></el-input>
+
+        <div style="margin:10px">
+          <el-button size="small" type="success" @click="backToHome"
+            >首页</el-button
+          >
+          <el-button size="small" type="success" @click="backDirHandle"
             >返回上一级</el-button
           >
-
-          <el-button
-            style="margin-left: 10px;"
-            size="small"
-            type="success"
-            @click="clearFiles"
-            >清空文件列表</el-button
-          >
-          <el-button
-            style="margin-left: 10px;"
-            size="small"
-            type="success"
-            @click="mkDir"
+          <el-button size="small" type="success" @click="mkDir"
             >创建文件夹</el-button
           >
-          <el-button
-            style="margin-left: 10px;"
-            size="small"
-            type="success"
-            @click="submitUpload"
-            >上传到服务器</el-button
-          >
-          <el-button
-            style="margin-left: 10px;"
-            size="small"
-            type="success"
-            @click="test()"
-            >test</el-button
-          >
         </div>
-      </el-upload>
+      </el-row>
 
-      <el-table :data="tableData" style="width: 100%">
-        <el-table-column prop="name" label="名称" width="180">
-          <template slot-scope="scope">
-            <a href="javascript:void(0);" @click="getData(scope.row)">{{
-              scope.row.name
-            }}</a>
-          </template>
-        </el-table-column>
-        <el-table-column prop="updateTime" label="修改时间" width="180">
-        </el-table-column>
-        <el-table-column prop="size" label="大小"> </el-table-column>
-        <el-table-column label="操作">
-          <template slot-scope="scope">
-            <el-button
-              size="mini"
-              type="danger"
-              @click="handleDelete(scope.$index, scope.row)"
-              >删除</el-button
-            >
-            <el-button
-              size="mini"
-              @click="handleRename(scope.$index, scope.row)"
-              >重命名</el-button
-            >
-            <el-button size="mini" @click="handleMove(scope.$index, scope.row)"
-              >移动</el-button
-            >
-            <el-button
-              v-if="scope.row.name.indexOf('.zip')!=-1"
-              size="mini"
-              @click="handleUnzip(scope.$index, scope.row)"
-              >解压</el-button
-            >
-            <el-button
-              v-if="scope.row.name.indexOf('.zip')==-1"
-              size="mini"
-              @click="handleZip(scope.$index, scope.row)"
-              >压缩</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+      <el-row style="margin:10px">
+        <el-col :span="17">
+          <el-table :data="tableData" style="width: 100%">
+            <el-table-column prop="name" label="名称" width="180">
+              <template slot-scope="scope">
+                <p @click="getData(scope.row)" style="cursor: pointer;">
+                  <i v-if="scope.row.isDir" class="iconfont icon-folder"></i>
+                  <i v-if="!scope.row.isDir" class="iconfont icon-file"></i>
+                  {{ scope.row.name }}
+                </p>
+              </template>
+            </el-table-column>
+            <el-table-column prop="updateTime" label="修改时间" width="180">
+            </el-table-column>
+            <el-table-column prop="size" label="大小" width="100">
+            </el-table-column>
+            <el-table-column label="操作">
+              <template slot-scope="scope">
+                <el-button
+                  size="mini"
+                  type="danger"
+                  @click="handleDelete(scope.$index, scope.row)"
+                  >删除</el-button
+                >
+                <el-button
+                  size="mini"
+                  @click="handleRename(scope.$index, scope.row)"
+                  >重命名</el-button
+                >
+                <el-button
+                  size="mini"
+                  @click="handleMove(scope.$index, scope.row)"
+                  >移动</el-button
+                >
+                <el-button
+                  v-if="scope.row.name.indexOf('.zip')!=-1"
+                  size="mini"
+                  @click="handleUnzip(scope.$index, scope.row)"
+                  >解压</el-button
+                >
+                <el-button
+                  v-if="scope.row.name.indexOf('.zip')==-1"
+                  size="mini"
+                  @click="handleZip(scope.$index, scope.row)"
+                  >压缩</el-button
+                >
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-col>
+
+        <el-col :span="6" style="margin:30px">
+          <el-upload
+            class="upload-demo"
+            drag
+            ref="upload"
+            multiple
+            action="/upload"
+            :data="fileExtraData"
+            :auto-upload="false"
+            :limit="100"
+            :file-list="fileArr"
+            :on-change="onChange"
+            :before-upload="beforeAvatarUpload"
+            :on-success="uploadSuccess"
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将文件拖到此处 或 点击上传</div>
+            <div class="el-upload__tip" slot="tip">
+              最多一次性上传100个文件,文件大小不能超过10G
+            </div>
+            <div class="el-upload__tip" slot="tip">
+              <el-button size="small" type="success" @click="clearFiles"
+                >清空文件列表</el-button
+              >
+              <el-button size="small" type="success" @click="submitUpload"
+                >上传到服务器</el-button
+              >
+            </div>
+          </el-upload>
+        </el-col>
+      </el-row>
 
       <!-- 文件夹选择弹窗 -->
       <el-dialog title="选择文件夹" :visible.sync="dialogVisible" width="40%">
@@ -151,7 +158,7 @@
       if (httpRequest.readyState == 4 && httpRequest.status == 200) {
         var data = JSON.parse(httpRequest.responseText);
         if (data.code == 0) {
-          alert(data.data);
+          // alert(data.data);
           //自动刷新页面
           location.reload();
           return;
@@ -174,7 +181,7 @@
         //验证请求是否发送成功
         var data = JSON.parse(httpRequest.responseText);
         if (data.code == 0) {
-          alert(data.data);
+          // alert(data.data);
           //自动刷新页面
           location.reload();
           return;
@@ -184,11 +191,22 @@
     };
   }
 
+  //登入
+  function login(handleFunction) {
+    var password = prompt("输入登入密码");
+    if (password == null || password === undefined) {
+      return;
+    }
+    ajaxPostUtil("/login", { password: password }, function(data) {
+      handleFunction(data);
+    });
+  }
+
   new Vue({
     el: "#app",
     data: function() {
       return {
-        // limieFileSize:100,//设置上传文件的数量限制
+        keyword: "", //搜索关键字
         fileArr: [], //待上传文件的list列表
         value: [], //文件夹选择值
         options: [], //文件夹的选择数据
@@ -201,10 +219,34 @@
       };
     },
     created() {
-      this.getDirData();
+      //先尝试自动登入
+      ajaxPostUtil("/autoLogin", { password: "" }, function(data) {
+        if (data.code == 1) {
+          getData(); //获取数据并刷新
+        } else {
+          //登入
+          login(function(data) {
+            getData(); //获取数据并刷新
+          });
+        }
+      });
+      this.getDirData(); //获取数据并刷新
     },
     methods: {
+      //搜索文件
+      searchFile() {
+        var _this = this;
+        ajaxGetUtil("/searchFile?fileName=" + this.keyword, function(response) {
+          if (response.code == 1) {
+            _this.tableData = response.data;
+            _this.keyword = "";
+          }
+        });
+      },
       test() {
+        ajaxGetUtil("/test", function(response) {
+          console.log(response);
+        });
         console.log("test======");
       },
       //在文件选择时会被触发
@@ -275,6 +317,12 @@
         }
         return currentDir.substring(0, i);
       },
+      //回到首页
+      backToHome() {
+        var path = this.computerBackDir("/");
+        this.getDirData(path);
+        this.currentDir = path;
+      },
       // 返回上一级目录(根据当前的目录推算出上一级目录)
       backDirHandle() {
         var path = this.computerBackDir(this.currentDir);
@@ -324,19 +372,31 @@
       },
       //解压
       handleUnzip(index, row) {
+        var _this = this;
         ajaxGetUtil(
           "/unzip?dirName=" + this.currentDir + "&fileName=" + row.name,
           function(response) {
-            console.log(response);
+            if (response.code == 1) {
+              _this.$message("文件解压成功");
+              _this.refreshDirData();
+            } else {
+              _this.$message("文件解压失败");
+            }
           }
         );
       },
       //压缩
       handleZip(index, row) {
+        var _this = this;
         ajaxGetUtil(
           "/zip?dirName=" + this.currentDir + "&fileName=" + row.name,
           function(response) {
-            console.log(response);
+            if (response.code == 1) {
+              _this.$message("文件压缩成功");
+              _this.refreshDirData();
+            } else {
+              _this.$message("文件压缩失败");
+            }
           }
         );
       },
@@ -424,7 +484,11 @@
           this.getDirData(row.relativePath);
         } else {
           //获取文件(方法待改进)
-          location.href = "/getFile?fileName=" + row.name;
+          location.href =
+            "/getFile?relativePath=" +
+            row.relativePath +
+            "&fileName=" +
+            row.name;
         }
       },
       refreshDirData() {
