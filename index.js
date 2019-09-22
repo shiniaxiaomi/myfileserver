@@ -7,8 +7,7 @@ var shell = require("shelljs");
 const compressing = require("compressing");
 moment.locale("zh-cn");
 var bodyParser = require("body-parser");
-const os=require("os");
-
+const os = require("os");
 
 //session
 var session = require("express-session");
@@ -29,13 +28,17 @@ var successed = 1;
 var autoLoginFailed = 2; //自动登入失败
 
 //指定资源文件路径
-var resourceDir = undefined;
-if(os.type()!="Windows_NT"){//线上
-  resourceDir="/myFileServer";
-}else{//本地
-  resourceDir=path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
+var resourceDir = undefined;//指定资源文件夹的路径
+var resorrceDirName = undefined;//指定资源文件夹的name,用于页面中移动文件名称的显示
+if (os.type() != "Windows_NT") {
+  //线上
+  resourceDir = "/myFileServer";
+  resorrceDirName = "/myFileServer";
+} else {
+  //本地
+  resourceDir = path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
+  resorrceDirName = "/upload";
 }
-
 
 var multer = require("multer"); //引入multer
 //文件存储的配置
@@ -65,22 +68,22 @@ var server = app.listen(8001, function() {
 });
 
 //设置拦截器
-app.all('*', function (req, res, next) {
-  if(req.session.isLogin != undefined){
+app.all("*", function(req, res, next) {
+  if (req.session.isLogin != undefined) {
     next();
     return;
   }
 
-  if(req.path=="/"|| req.path=="/login" || req.path=="/autoLogin" ){
+  if (req.path == "/" || req.path == "/login" || req.path == "/autoLogin") {
     next();
     return;
   }
 
   if (req.session.isLogin == undefined) {
-    res.json({ code: 0, data: "请先登入" })
+    res.json({ code: 0, data: "请先登入" });
     return;
   }
-})
+});
 
 //当'/'请求时返回首页
 app.get("/", function(req, res) {
@@ -114,7 +117,6 @@ app.post("/autoLogin", bodyParser.json(), function(req, res) {
     res.send({ code: autoLoginFailed, data: "密码错误" });
   }
 });
-
 
 //解压
 app.get("/unzip", function(req, res) {
@@ -350,7 +352,7 @@ function getResourceDirObj() {
   var buff = {
     children: []
   };
-  computeDirSize(buff, resourceDir, "/", "upload");
+  computeDirSize(buff, resourceDir, "/", resorrceDirName);
   return buff.children[0];
 }
 
