@@ -78,11 +78,6 @@ app.all("*", function(req, res, next) {
     next();
     return;
   }
-
-  if (req.session.isLogin == undefined) {
-    res.json({ code: 0, data: "请先登入" });
-    return;
-  }
 });
 
 //当'/'请求时返回首页
