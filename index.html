@@ -219,18 +219,18 @@
       };
     },
     created() {
+      var _this = this;
       //先尝试自动登入
       ajaxPostUtil("/autoLogin", { password: "" }, function(data) {
         if (data.code == 1) {
-          getData(); //获取数据并刷新
+          _this.getDirData(); //获取数据并刷新
         } else {
           //登入
           login(function(data) {
-            getData(); //获取数据并刷新
+            _this.getDirData(); //获取数据并刷新
           });
         }
       });
-      this.getDirData(); //获取数据并刷新
     },
     methods: {
       //搜索文件

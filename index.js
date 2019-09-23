@@ -77,6 +77,8 @@ app.all("*", function(req, res, next) {
   if (req.path == "/" || req.path == "/login" || req.path == "/autoLogin") {
     next();
     return;
+  } else {
+    res.send({ code: failed, data: "请先登入" });
   }
 });
 
