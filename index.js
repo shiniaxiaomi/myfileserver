@@ -49,6 +49,7 @@ var storage = multer.diskStorage({
     cb(null, path.join(resourceDir, req.body.dirName)); //要确保这个文件夹路径是自己创建的
   },
   filename: function(req, file, cb) {
+    console.log(file.originalname)
     cb(null, file.originalname);
   }
 });
@@ -232,6 +233,7 @@ app.get("/getFile", function(req, res) {
 
 //上传文件
 app.post("/upload", upload.any(), function(req, res) {
+  console.log(new Date()+":文件上传中。。。")
   try{
     refreshResourceDirObj();
     refreshDirTreeObj();
