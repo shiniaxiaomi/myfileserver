@@ -30,14 +30,14 @@ var autoLoginFailed = 2; //自动登入失败
 //指定资源文件路径
 var resourceDir = undefined; //指定资源文件夹的路径
 var resorrceDirName = undefined; //指定资源文件夹的name,用于页面中移动文件名称的显示
-if (os.type() != "Windows_NT") {
-  //线上
-  resourceDir = "/myFileServer";
-  resorrceDirName = "myFileServer";
-} else {
+if (os.type() == "Darwin") {
   //本地
   resourceDir = path.join(__dirname, "./upload"); //resourceDir必须指定为绝对路径
   resorrceDirName = "upload";
+} else if (os.type() != "Windows_NT") {
+  //线上
+  resourceDir = "/myFileServer";
+  resorrceDirName = "myFileServer";
 }
 
 var multer = require("multer"); //引入multer
@@ -232,9 +232,13 @@ app.get("/getFile", function(req, res) {
 
 //上传文件
 app.post("/upload", upload.any(), function(req, res) {
-  refreshResourceDirObj();
-  refreshDirTreeObj();
-  res.sendStatus(200);
+  try{
+    refreshResourceDirObj();
+    refreshDirTreeObj();
+    res.sendStatus(200);
+  }catch(e){
+    res.sendStatus(400);
+  }
 });
 
 //创建文件夹

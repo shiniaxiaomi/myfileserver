@@ -277,11 +277,15 @@
       },
       //上传成功后提示信息,并清空文件列表
       uploadSuccess(response, file, fileList) {
-        this.uploadTimes++;
-        if (fileList.length == this.uploadTimes) {
-          this.$message("文件全部上传成功");
-          this.$refs.upload.clearFiles();
-          this.refreshDirData();
+        if(response.status==200){
+          this.uploadTimes++;
+          if (fileList.length == this.uploadTimes) {
+            this.$message("文件全部上传成功");
+            this.$refs.upload.clearFiles();
+            this.refreshDirData();
+          }
+        }else{
+          this.$message("文件上传失败");
         }
       },
       //上传之前限制文件大小
